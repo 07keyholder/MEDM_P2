@@ -106,23 +106,34 @@ def compute_intersection_graph(Graph):
     # Create a graph from the distance matrix
     graph = nx.from_numpy_array(dist_matrix)
     # Generate a minimum spanning tree (MST) from the graph
-    mst = nx.minimum_spanning_tree(graph)
+    mst_graph = nx.minimum_spanning_tree(graph)
+    
 
     #KNN
     # Initialize the NearestNeighbors model
     n = Graph.shape[0]
-    k = int(np.log(n))
+    kmax = int(np.log(n))
+    k=1
     knn_model = NearestNeighbors(n_neighbors=k)
     # Fit the model to your data
     knn_model.fit(Graph)
     # Compute the kNN graph
     knn_graph = knn_model.kneighbors_graph(Graph)
-    
-    #Intersection
-    # Convert the MST to a NetworkX graph
-    mst_graph = nx.Graph(mst)
     # Convert the kNN graph to a NetworkX graph
     knn_graph_nx = nx.from_scipy_sparse_matrix(knn_graph)
+    while not nx.is_connected(knn_graph_nx) and k<=kmax:
+        knn_model = NearestNeighbors(n_neighbors=k)
+        # Fit the model to your data
+        knn_model.fit(Graph)
+        # Compute the kNN graph
+        knn_graph = knn_model.kneighbors_graph(Graph)
+        # Convert the kNN graph to a NetworkX graph
+        knn_graph_nx = nx.from_scipy_sparse_matrix(knn_graph)
+        k+=1
+        
+    
+    #Intersection
+    
     # Find the intersection of the two graphs
     intersection_graph = nx.intersection(mst_graph, knn_graph_nx)
     return intersection_graph
@@ -161,6 +172,10 @@ def compute_intersection_graph_recursively(X):
 
 clusters = compute_intersection_graph_recursively(X)
 plt.scatter(X_mca[0], X_mca[1], c=clusters, cmap='viridis', alpha=0.6, s = 10)
+plt.title("MST-KNN Clustering")
+plt.xlabel("MCA Component 1")
+plt.ylabel("MCA Component 2")
+plt.show()
 
 
 
